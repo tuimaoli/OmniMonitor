@@ -32,14 +32,13 @@ class DataFetcher:
         for attempt in range(max_retries + 1):
             try:
                 req = urllib.request.Request(url, headers=headers)
-                # 设置合理的超时时间，防止卡死
                 with urllib.request.urlopen(req, timeout=10) as f:
                     raw = f.read()
                     if f.headers.get('Content-Encoding') == 'gzip':
-                        try: raw = gzip.decompress(raw)
-                        except: pass
-                    # 成功获取数据，直接返回
-                    return json.loads(raw.decode('utf-8'))
+                        raw = gzip.decompress(raw)
+                    res_json = json.loads(raw.decode('utf-8'))
+                    # 针对和风天气的特殊处理：即使HTTP 200，JSON里的code也可能不是200
+                    return res_json
             
             except (urllib.error.URLError, socket.timeout) as e:
                 # 只有是网络相关错误时才重试
@@ -56,7 +55,7 @@ class DataFetcher:
                 self._log('warning', f"API返回了非JSON数据: {url[:30]}...")
                 return None
             except Exception as e:
-                self._log('error', f"API请求发生未知异常: {e}")
+                self._log('error', f"请求最终失败: {url[:50]}... {e}")
                 return None
         
         return None
@@ -155,7 +154,11 @@ class DataFetcher:
         is_first = True
         has_data = False
         
-        for loc in locations:
+        for i, loc in enumerate(locations):
+            # 修复点 2: 增加请求间隔，防止触发 API 频率限制
+            if i > 0:
+                time.sleep(1.5) 
+
             url = f"https://devapi.qweather.com/v7/weather/24h?location={loc['code']}&key={self.keys['qweather']}"
             
             res = self._request(url, max_retries=2, delay=3)
