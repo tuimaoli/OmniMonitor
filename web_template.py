@@ -222,7 +222,10 @@ HTML_TEMPLATE = """
             background: currentColor;
         }
         .wave-slider {
-            position: absolute; top: -28px; left: 0; width: 200%; height: 28px;
+            position: absolute; 
+            /* Fix for white line gap: overlap by 1px */
+            top: -27px; 
+            left: 0; width: 200%; height: 28px;
             background: currentColor;
             -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100 V 50 Q 250 0 500 50 T 1000 50 V 100 Z' fill='%23000'/%3E%3C/svg%3E");
             mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 100' preserveAspectRatio='none'%3E%3Cpath d='M0 100 V 50 Q 250 0 500 50 T 1000 50 V 100 Z' fill='%23000'/%3E%3C/svg%3E");
@@ -230,7 +233,11 @@ HTML_TEMPLATE = """
             -webkit-mask-repeat: repeat-x; mask-repeat: repeat-x;
             animation: wave-move 4s linear infinite; will-change: transform;
         }
-        .wave-slider.back { top: -30px; opacity: 0.4; animation: wave-move 7s linear infinite reverse; }
+        .wave-slider.back { 
+            /* Fix for gap: align perfectly with overlap */
+            top: -27px; 
+            opacity: 0.4; animation: wave-move 7s linear infinite reverse; 
+        }
         @keyframes wave-move { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-50%, 0, 0); } }
 
         .theme-cpu { color: #f87171; } .theme-cpu .liquid-wave-wrapper { background: linear-gradient(to top, #ef4444, #f87171); }
@@ -350,7 +357,7 @@ HTML_TEMPLATE = """
     <div class="app-container">
         <div class="header">
             <div class="brand"><div class="pulse-dot"></div> 监控推送控制台</div>
-            <div class="version-tag" style="font-size:12px; color:var(--text-sub); font-weight:600; opacity:0.6">V8.2 Mobile</div>
+            <div class="version-tag" style="font-size:12px; color:var(--text-sub); font-weight:600; opacity:0.6">V8.5 Gulu</div>
             <div class="page-title" id="mobile-page-title" style="display:none">仪表盘</div>
         </div>
         
@@ -712,12 +719,33 @@ HTML_TEMPLATE = """
         // --- Helpers ---
         window.addEventListener('click', (e) => { createStars(e.clientX, e.clientY); });
         function createStars(x, y) {
-            const shapes = ['✦', '✨', '✶', '·']; 
+            // Updated paths to be absolute from server root
+            const images = [
+                '/gulu/普通咕噜球.png',
+                '/gulu/高级咕噜球.png',
+                '/gulu/超级咕噜球.png',
+                '/gulu/国王球.png',
+            ]; 
+            
             for (let i = 0; i < 6; i++) {
                 const star = document.createElement('div');
-                star.className = 'particle-star';
-                star.innerHTML = shapes[Math.floor(Math.random() * shapes.length)];
+                star.classList.add('particle-star');
+                
+                // Random Size Logic (e.g., 10px to 20px)
+                const size = 10 + Math.random() * 10; 
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                
+                // Create Image
+                const img = document.createElement('img');
+                img.src = images[Math.floor(Math.random() * images.length)];
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                
+                star.appendChild(img);
                 document.body.appendChild(star);
+                
                 const offsetX = (Math.random() - 0.5) * 60;
                 const offsetY = (Math.random() - 0.5) * 40;
                 star.style.left = (x + offsetX) + 'px';
