@@ -1,0 +1,120 @@
+{
+    "pushplus_users": [
+        {
+            "token": "",
+            "topic": "test_qun"
+        }
+    ],
+    "api_keys": {
+        "amap": "",
+        "qweather": ""
+    },
+    "logging": {
+        "log_dir": "./logs",
+        "retention_days": 3,
+        "level": "INFO"
+    },
+    "cyclic_report": {
+        "enable": true,
+        "interval_minutes": 60,
+        "locations": [
+            {
+                "name": "公司",
+                "code": ""
+            },
+            {
+                "name": "老家",
+                "code": ""
+            }
+        ],
+        "align_to_hour": true
+    },
+    "active_alert": {
+        "server": {
+            "check_interval": 60,
+            "alert_cooldown": 3600,
+            "cpu_temp_threshold": 75,
+            "disk_usage_threshold": 90
+        },
+        "gold": {
+            "check_interval": 300,
+            "alert_cooldown": 3600,
+            "low": 1130,
+            "high": 1200
+        },
+        "weather": {
+            "check_interval": 600,
+            "alert_cooldown": 21600,
+            "locations": [
+                {
+                    "name": "",
+                    "code": ""
+                },
+                {
+                    "name": "",
+                    "code": ""
+                }
+            ],
+            "temp_low": 0,
+            "bad_weather_keywords": [
+                "雪",
+                "雨",
+                "雾",
+                "雹",
+                "霾",
+                "暴"
+            ]
+        },
+        "bilibili": {
+            "check_interval": 1800,
+            "uids": [
+                {
+                    "name": "小潮院长",
+                    "uid": "5970160"
+                },
+                {
+                    "name": "影视飓风",
+                    "uid": "946974"
+                },
+                {
+                    "name": "腿毛利小五郎",
+                    "uid": "169296821"
+                },
+                {
+                    "name": "稚晖君",
+                    "uid": "20259914"
+                }
+            ]
+        }
+    },
+    "scheduled_push": {
+        "commute": {
+            "enable": true,
+            "lead_time_minutes": 60,
+            "work_start": "08:30",
+            "work_end": "17:30",
+            "home_loc": "113.705175,34.726701",
+            "work_loc": "113.687882,34.782756"
+        },
+        "countdowns": [
+            {
+                "name": "我的生日",
+                "date": "2006-02-24",
+                "is_lunar": true,
+                "remind_days": 7
+            },
+            {
+                "name": "法定放假",
+                "date": "2025-12-28",
+                "is_lunar": true,
+                "remind_days": 15
+            },
+            {
+                "name": "新年",
+                "date": "2026-01-01",
+                "is_lunar": true,
+                "remind_days": 7
+            }
+        ]
+    }
+}

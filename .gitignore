@@ -1,0 +1,22 @@
+# Python 缓存
+
+pycache/
+*.py[cod]
+*$py.class
+
+# 运行时生成的文件
+
+.push_cache_v2
+logs/
+*.log
+
+# 系统文件
+
+.DS_Store
+Thumbs.db
+
+# 如果你是私有仓库，可以注释掉下面这就行，如果是公开仓库，务必取消注释
+
+config.json
+
+text.md
