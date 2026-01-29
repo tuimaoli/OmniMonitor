@@ -221,6 +221,8 @@ class DataFetcher:
                 if "hq_str" in content:
                     items = content[content.find('"')+1 : content.rfind('"')].split(',')
                     if len(items) > 3: return float(items[3])
+        except (urllib.error.URLError, socket.timeout):
+            return None 
         except Exception as e: 
             pass
         return None
