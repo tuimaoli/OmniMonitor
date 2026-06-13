@@ -1,4 +1,24 @@
 {
+    "auth": {
+        "secret_key": "",
+        "token_expire_hours": 24,
+        "max_login_attempts": 5,
+        "lockout_minutes": 15
+    },
+    "users": [
+        {
+            "username": "admin",
+            "password_hash": "",
+            "salt": "",
+            "role": "admin"
+        },
+        {
+            "username": "guest",
+            "password_hash": "",
+            "salt": "",
+            "role": "guest"
+        }
+    ],
     "pushplus_users": [
         {
             "token": "",
