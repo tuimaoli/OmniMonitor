@@ -331,6 +331,59 @@ HTML_TEMPLATE = """
         .btn-danger { background: #fee2e2; color: #ef4444; }
         .btn-cancel { background: transparent; color: #94a3b8; }
         
+        /* ── Login Page ── */
+        .login-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 30; background: transparent; padding: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+        .login-overlay.hidden { display: none; }
+        .login-card {
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px; padding: 40px 32px; width: 100%; max-width: 380px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12); border: 1px solid rgba(255,255,255,0.6);
+            text-align: center; animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .login-card h2 { margin: 0 0 4px; font-size: 22px; font-weight: 800; color: #1e293b; }
+        .login-card .subtitle { font-size: 12px; color: #94a3b8; margin-bottom: 28px; }
+        .login-card .input-group { margin-bottom: 16px; text-align: left; }
+        .login-card .input-group label { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+        .login-card .input-group input {
+            width: 100%; padding: 12px 14px; border: 1px solid #e2e8f0; background: #f8fafc;
+            border-radius: 10px; font-size: 15px; color: #334155; transition: 0.2s; font-family: inherit;
+            -webkit-appearance: none;
+        }
+        .login-card .input-group input:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .login-btn {
+            width: 100%; padding: 13px; background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+            cursor: pointer; margin-top: 8px; transition: all 0.2s; box-shadow: 0 4px 14px rgba(79,70,229,0.25);
+        }
+        .login-btn:active { transform: scale(0.97); }
+        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .login-error { color: #ef4444; font-size: 12px; margin-top: 10px; min-height: 18px; font-weight: 600; }
+        .login-info { color: #94a3b8; font-size: 11px; margin-top: 20px; line-height: 1.6; }
+
+        /* ── Auth Header ── */
+        .user-area { display: flex; align-items: center; gap: 10px; }
+        .role-badge {
+            font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .role-badge.admin { background: #eef2ff; color: #4f46e5; }
+        .role-badge.guest { background: #f1f5f9; color: #64748b; }
+        .session-timer { font-size: 11px; color: #94a3b8; font-weight: 500; }
+        .logout-btn {
+            background: transparent; border: 1px solid #e2e8f0; padding: 5px 12px; border-radius: 8px;
+            font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s;
+        }
+        .logout-btn:hover { background: #fee2e2; color: #ef4444; border-color: #fecaca; }
+
+        /* ── Guest disabled state ── */
+        body.is-guest .admin-only { opacity: 0.4; pointer-events: none; filter: grayscale(0.5); }
+        body.is-guest .fab-save { display: none !important; }
+
         /* Mobile specific adjustments */
         @media (max-width: 768px) {
             .app-container { width: 100%; height: 100vh; border-radius: 0; border: none; }
@@ -354,10 +407,33 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
-    <div class="app-container">
+    <!-- ── 登录遮罩 ── -->
+    <div class="login-overlay" id="login-overlay">
+        <div class="login-card">
+            <h2>🔐 身份验证</h2>
+            <p class="subtitle">OmniMonitor 控制台 · 公网安全接入</p>
+            <div class="input-group">
+                <label>用户名</label>
+                <input type="text" id="login-user" placeholder="请输入用户名" autocomplete="username">
+            </div>
+            <div class="input-group">
+                <label>密码</label>
+                <input type="password" id="login-pass" placeholder="请输入密码" autocomplete="current-password">
+            </div>
+            <button class="login-btn" id="login-btn" onclick="doLogin()">登 录</button>
+            <div class="login-error" id="login-error"></div>
+            <div class="login-info">默认管理员: admin / admin123<br>默认访客: guest / guest123<br>首次登录后请通过配置文件修改密码</div>
+        </div>
+    </div>
+
+    <div class="app-container" id="main-app" style="display:none">
         <div class="header">
             <div class="brand"><div class="pulse-dot"></div> 监控推送控制台</div>
-            <div class="version-tag" style="font-size:12px; color:var(--text-sub); font-weight:600; opacity:0.6">V8.5 Gulu</div>
+            <div class="user-area">
+                <span class="role-badge" id="role-badge">admin</span>
+                <span class="session-timer" id="session-timer"></span>
+                <button class="logout-btn" onclick="doLogout()">退出</button>
+            </div>
             <div class="page-title" id="mobile-page-title" style="display:none">仪表盘</div>
         </div>
         
@@ -466,7 +542,7 @@ HTML_TEMPLATE = """
         <!-- Mobile Bottom Floating Indicator -->
         <div class="mobile-indicator" id="page-dots"></div>
         
-        <button id="save-btn" class="fab-save" onclick="handleSaveClick()">💾 保存配置</button>
+        <button id="save-btn" class="fab-save admin-only" onclick="handleSaveClick()">💾 保存配置</button>
     </div>
     
     <!-- Confirm Modal -->
@@ -484,31 +560,222 @@ HTML_TEMPLATE = """
     <div id="toast"></div>
 
     <script>
-        // --- Global State ---
+        // ═══════════════════════════════════════
+        //  Auth State
+        // ═══════════════════════════════════════
+        let AUTH_TOKEN = localStorage.getItem('om_token') || '';
+        let AUTH_ROLE = localStorage.getItem('om_role') || '';
+        let AUTH_USER = localStorage.getItem('om_user') || '';
+        let TOKEN_EXPIRES = parseInt(localStorage.getItem('om_exp') || '0');
+        let sessionTimerInterval = null;
+
+        function isTokenValid() {
+            return AUTH_TOKEN && TOKEN_EXPIRES > Date.now() / 1000 + 30; // 30s buffer
+        }
+
+        function saveAuth(data) {
+            AUTH_TOKEN = data.token;
+            AUTH_ROLE = data.role;
+            AUTH_USER = data.username;
+            TOKEN_EXPIRES = Date.now() / 1000 + data.expires_in;
+            localStorage.setItem('om_token', AUTH_TOKEN);
+            localStorage.setItem('om_role', AUTH_ROLE);
+            localStorage.setItem('om_user', AUTH_USER);
+            localStorage.setItem('om_exp', String(Math.floor(TOKEN_EXPIRES)));
+        }
+
+        function clearAuth() {
+            AUTH_TOKEN = ''; AUTH_ROLE = ''; AUTH_USER = ''; TOKEN_EXPIRES = 0;
+            localStorage.removeItem('om_token');
+            localStorage.removeItem('om_role');
+            localStorage.removeItem('om_user');
+            localStorage.removeItem('om_exp');
+        }
+
+        async function fetchWithAuth(url, opts = {}) {
+            if (!opts.headers) opts.headers = {};
+            opts.headers['Authorization'] = 'Bearer ' + AUTH_TOKEN;
+            const res = await fetch(url, opts);
+            if (res.status === 401) {
+                // Token 过期或无效 → 强制退出
+                clearAuth();
+                showLogin();
+                throw new Error('AUTH_EXPIRED');
+            }
+            if (res.status === 429) {
+                toast('⚠️ 请求过于频繁，请稍后再试', true);
+                throw new Error('RATE_LIMITED');
+            }
+            return res;
+        }
+
+        // ═══════════════════════════════════════
+        //  Login / Logout
+        // ═══════════════════════════════════════
+
+        async function doLogin() {
+            const btn = byId('login-btn');
+            const errEl = byId('login-error');
+            const username = byId('login-user').value.trim();
+            const password = byId('login-pass').value;
+
+            if (!username || !password) { errEl.textContent = '请输入用户名和密码'; return; }
+
+            btn.disabled = true;
+            btn.textContent = '验证中...';
+            errEl.textContent = '';
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    saveAuth(data);
+                    showDashboard();
+                    toast('✅ 欢迎回来, ' + data.username);
+                } else {
+                    errEl.textContent = data.error || '登录失败';
+                    btn.disabled = false;
+                    btn.textContent = '登 录';
+                }
+            } catch (e) {
+                errEl.textContent = '网络错误，请检查连接';
+                btn.disabled = false;
+                btn.textContent = '登 录';
+            }
+        }
+
+        function doLogout() {
+            clearAuth();
+            // 尝试通知服务端 (fire-and-forget)
+            fetch('/api/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + (AUTH_TOKEN || localStorage.getItem('om_token') || '') } }).catch(() => {});
+            stopSessionTimer();
+            showLogin();
+            toast('👋 已安全退出');
+        }
+
+        function showLogin() {
+            byId('login-overlay').classList.remove('hidden');
+            byId('main-app').style.display = 'none';
+            document.body.classList.add('is-guest');
+            byId('login-user').value = '';
+            byId('login-pass').value = '';
+            byId('login-error').textContent = '';
+            byId('login-btn').disabled = false;
+            byId('login-btn').textContent = '登 录';
+            stopSessionTimer();
+        }
+
+        function showDashboard() {
+            byId('login-overlay').classList.add('hidden');
+            byId('main-app').style.display = 'flex';
+            // 角色适配
+            if (AUTH_ROLE === 'guest') {
+                document.body.classList.add('is-guest');
+            } else {
+                document.body.classList.remove('is-guest');
+            }
+            // 角色徽章
+            const badge = byId('role-badge');
+            badge.textContent = AUTH_ROLE;
+            badge.className = 'role-badge ' + AUTH_ROLE;
+            // 更新欢迎语
+            document.querySelector('.welcome-box h1').innerHTML = 'Hi, ' + AUTH_USER + ' 👋';
+            // 启动会话计时器
+            startSessionTimer();
+            // 初始化主界面
+            initDashboard();
+        }
+
+        function startSessionTimer() {
+            stopSessionTimer();
+            updateSessionTimer();
+            sessionTimerInterval = setInterval(updateSessionTimer, 30000);
+        }
+
+        function stopSessionTimer() {
+            if (sessionTimerInterval) { clearInterval(sessionTimerInterval); sessionTimerInterval = null; }
+        }
+
+        function updateSessionTimer() {
+            const remaining = Math.max(0, TOKEN_EXPIRES - Date.now() / 1000);
+            const el = byId('session-timer');
+            if (remaining <= 0) {
+                el.textContent = '已过期';
+                el.style.color = '#ef4444';
+                // 下次 API 调用时会触发 401 重新登录
+                return;
+            }
+            const h = Math.floor(remaining / 3600);
+            const m = Math.floor((remaining % 3600) / 60);
+            el.textContent = '⏳ ' + (h > 0 ? h + 'h ' : '') + m + 'm';
+            el.style.color = remaining < 600 ? '#f59e0b' : '#94a3b8'; // <10min warn
+        }
+
+        // ═══════════════════════════════════════
+        //  Global State
+        // ═══════════════════════════════════════
         let cfg = {};
         let originalCfgStr = ""; 
         const tabs = ['dashboard', 'basic', 'cyclic', 'alert', 'schedule', 'json'];
-        const tabNames = ['仪表盘', '基础配置', '循环上报', '主动报警', '日程任务', 'JSON 编辑']; // Title mapping
+        const tabNames = ['仪表盘', '基础配置', '循环上报', '主动报警', '日程任务', 'JSON 编辑'];
         let currentTabIndex = 0;
         let pendingTargetIndex = -1; 
+        let dashboardInitialized = false;
 
-        // --- Init ---
+        // ═══════════════════════════════════════
+        //  Init (Auth-first)
+        // ═══════════════════════════════════════
         window.onload = async () => {
+            // 检查本地存储的 token 是否有效
+            if (isTokenValid()) {
+                // 向服务端验证 token 是否仍然有效
+                try {
+                    const res = await fetchWithAuth('/api/auth-check');
+                    if (res.ok) {
+                        const data = await res.json();
+                        AUTH_USER = data.username;
+                        AUTH_ROLE = data.role;
+                        localStorage.setItem('om_user', AUTH_USER);
+                        localStorage.setItem('om_role', AUTH_ROLE);
+                        showDashboard();
+                        return;
+                    }
+                } catch (e) {
+                    // token 无效，走登录流程
+                }
+            }
+            // 未登录或 token 无效 → 显示登录页
+            clearAuth();
+            showLogin();
+        };
+
+        // 登录成功后初始化仪表盘 (只跑一次)
+        async function initDashboard() {
+            if (dashboardInitialized) {
+                // 已初始化过，只刷新状态
+                loadStatus();
+                return;
+            }
+            dashboardInitialized = true;
             initDots();
             setInterval(updateClock, 1000); updateClock();
-            setInterval(loadStatus, 3000); 
-            // Mobile Title Init
+            setInterval(loadStatus, 3000);
             updateMobileTitle(0);
-            
+
             try {
-                const res = await fetch('/api/config');
+                const res = await fetchWithAuth('/api/config');
                 cfg = await res.json();
-                originalCfgStr = JSON.stringify(cfg); 
+                originalCfgStr = JSON.stringify(cfg);
                 renderAll(); loadStatus();
-                // Initially show indicator
                 wakeUpIndicator();
-            } catch(e) { toast('初始化失败', true); }
-        };
+            } catch(e) {
+                if (e.message !== 'AUTH_EXPIRED') toast('初始化失败', true);
+            }
+        }
 
         // --- Auto-Hide Indicator Logic ---
         let indicatorTimer;
@@ -702,7 +969,7 @@ HTML_TEMPLATE = """
             }
 
             try {
-                const res = await fetch('/api/save', { method: 'POST', body: JSON.stringify(cfg) });
+                const res = await fetchWithAuth('/api/save', { method: 'POST', body: JSON.stringify(cfg) });
                 if(res.ok) { 
                     toast('✅ 配置已安全保存'); 
                     originalCfgStr = JSON.stringify(cfg); 
@@ -773,7 +1040,7 @@ HTML_TEMPLATE = """
         }
 
         function loadStatus() {
-            fetch('/api/status').then(r=>r.json()).then(data => {
+            fetchWithAuth('/api/status').then(r=>r.json()).then(data => {
                 byId('dash-quote').innerHTML = data.quote;
                 const setWave = (id, v) => {
                     byId('val-'+id).innerText = v;
