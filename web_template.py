@@ -595,9 +595,15 @@ HTML_TEMPLATE = """
         async function fetchWithAuth(url, opts = {}) {
             if (!opts.headers) opts.headers = {};
             opts.headers['Authorization'] = 'Bearer ' + AUTH_TOKEN;
-            const res = await fetch(url, opts);
+            let res;
+            try {
+                res = await fetch(url, opts);
+            } catch (netErr) {
+                // 网络抖动 (超时/断网) — 不踢人，返回假响应让调用方静默跳过
+                console.warn('fetchWithAuth network error:', netErr.message);
+                throw new Error('NETWORK_ERROR');
+            }
             if (res.status === 401) {
-                // Token 过期或无效 → 强制退出
                 clearAuth();
                 showLogin();
                 throw new Error('AUTH_EXPIRED');
@@ -745,10 +751,19 @@ HTML_TEMPLATE = """
                         return;
                     }
                 } catch (e) {
-                    // token 无效，走登录流程
+                    if (e.message === 'AUTH_EXPIRED') {
+                        // Token 确实过期 → 走登录
+                        clearAuth();
+                        showLogin();
+                        return;
+                    }
+                    // 网络错误 — 不踢人，直接用缓存的 token 进仪表盘
+                    console.warn('auth-check network error, using cached token');
+                    showDashboard();
+                    return;
                 }
             }
-            // 未登录或 token 无效 → 显示登录页
+            // 无 token → 显示登录页
             clearAuth();
             showLogin();
         };
@@ -763,7 +778,7 @@ HTML_TEMPLATE = """
             dashboardInitialized = true;
             initDots();
             setInterval(updateClock, 1000); updateClock();
-            setInterval(loadStatus, 3000);
+            setInterval(loadStatus, 10000);
             updateMobileTitle(0);
 
             try {
@@ -773,7 +788,7 @@ HTML_TEMPLATE = """
                 renderAll(); loadStatus();
                 wakeUpIndicator();
             } catch(e) {
-                if (e.message !== 'AUTH_EXPIRED') toast('初始化失败', true);
+                if (e.message !== 'AUTH_EXPIRED' && e.message !== 'NETWORK_ERROR') toast('初始化失败', true);
             }
         }
 
