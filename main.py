@@ -6,6 +6,7 @@ from data_fetcher import DataFetcher
 from monitor import SystemMonitor
 from web_service import WebService
 from scheduler import TaskScheduler
+from auth import AuthManager
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, 'config.json')
@@ -26,17 +27,22 @@ def main():
     # 2. 初始化核心组件
     config_mgr = ConfigManager(CONFIG_PATH, logger)
     
+    # 2.5 确保认证配置存在 (首次启动自动生成默认账户)
+    config_mgr.ensure_auth_defaults()
+    auth_mgr = AuthManager(config_mgr.data, logger)
+    
     # 3. 初始化服务组件
     pusher = PushPlusClient(config_mgr.data.get('pushplus_users', []), logger)
     fetcher = DataFetcher(config_mgr.data, logger)
     monitor = SystemMonitor(logger)
 
-    # 4. 启动 Web 配置台
+    # 4. 启动 Web 配置台 (带认证)
     web_server = WebService(
         config_manager=config_mgr, 
         logger=logger, 
         fetcher=fetcher, 
-        monitor=monitor, 
+        monitor=monitor,
+        auth_mgr=auth_mgr,
         port=8888
     )
     web_server.start()
@@ -48,7 +54,8 @@ def main():
         pusher=pusher,
         fetcher=fetcher,
         monitor=monitor,
-        cache_file=CACHE_FILE
+        cache_file=CACHE_FILE,
+        auth_mgr=auth_mgr
     )
     
     scheduler.start()

@@ -4,13 +4,14 @@ from datetime import datetime, timedelta
 import utils
 
 class TaskScheduler:
-    def __init__(self, config_mgr, logger, pusher, fetcher, monitor, cache_file):
+    def __init__(self, config_mgr, logger, pusher, fetcher, monitor, cache_file, auth_mgr=None):
         self.cfg_mgr = config_mgr
         self.logger = logger
         self.pusher = pusher
         self.fetcher = fetcher
         self.monitor = monitor
         self.cache_file = cache_file
+        self.auth_mgr = auth_mgr
         
         self.cache = self._load_cache()
         # 运行时状态记录
@@ -80,6 +81,8 @@ class TaskScheduler:
                     self.fetcher.cfg = config
                     self.fetcher.keys = config['api_keys']
                     self._update_intervals() # 重新加载间隔配置
+                    if self.auth_mgr:
+                        self.auth_mgr.reload_users()
                     self.logger.info(f"配置已重载，当前日志冲刷间隔: {self.flush_interval}s")
 
                 # --- 2. 日志清理 ---
