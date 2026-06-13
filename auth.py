@@ -6,6 +6,8 @@ OmniMonitor 认证与安全模块
 - 简易频率限制
 """
 
+from __future__ import annotations
+
 import hashlib
 import hmac
 import os
