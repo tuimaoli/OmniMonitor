@@ -440,12 +440,7 @@ HTML_TEMPLATE = """
         <div class="content-wrapper">
             <!-- Desktop Sidebar -->
             <div class="sidebar">
-                <button class="nav-btn active" onclick="switchTab('dashboard', this)"><span>🏠</span> 仪表盘</button>
-                <button class="nav-btn" onclick="switchTab('basic', this)"><span>🛠️</span> 基础配置</button>
-                <button class="nav-btn" onclick="switchTab('cyclic', this)"><span>📊</span> 循环上报</button>
-                <button class="nav-btn" onclick="switchTab('alert', this)"><span>🚨</span> 主动报警</button>
-                <button class="nav-btn" onclick="switchTab('schedule', this)"><span>📅</span> 日程任务</button>
-                <button class="nav-btn" onclick="switchTab('json', this)"><span>📝</span> JSON 编辑</button>
+                <!-- 由 renderSidebar() 动态填充 -->
             </div>
             
             <div class="main-panel" id="main-panel">
@@ -678,12 +673,22 @@ HTML_TEMPLATE = """
         function showDashboard() {
             byId('login-overlay').classList.add('hidden');
             byId('main-app').style.display = 'flex';
-            // 角色适配
-            if (AUTH_ROLE === 'guest') {
-                document.body.classList.add('is-guest');
-            } else {
+
+            // ── 按角色构建可见 Tab ──
+            if (AUTH_ROLE === 'admin') {
+                tabs = [...allTabs];
+                tabNames = [...allTabNames];
                 document.body.classList.remove('is-guest');
+            } else {
+                // 访客：只显示仪表盘
+                tabs = ['dashboard'];
+                tabNames = ['仪表盘'];
+                document.body.classList.add('is-guest');
             }
+            // 重建侧栏导航
+            renderSidebar();
+            currentTabIndex = 0;
+
             // 角色徽章
             const badge = byId('role-badge');
             badge.textContent = AUTH_ROLE;
@@ -694,6 +699,15 @@ HTML_TEMPLATE = """
             startSessionTimer();
             // 初始化主界面
             initDashboard();
+        }
+
+        function renderSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            if (!sidebar) return;
+            sidebar.innerHTML = tabs.map((id, i) => {
+                const icon = allTabs.indexOf(id) >= 0 ? tabIcons[allTabs.indexOf(id)] : '';
+                return '<button class="nav-btn' + (i === 0 ? ' active' : '') + '" onclick="switchTab(\'' + id + '\', this)"><span>' + icon + '</span> ' + tabNames[i] + '</button>';
+            }).join('');
         }
 
         function startSessionTimer() {
@@ -726,8 +740,11 @@ HTML_TEMPLATE = """
         // ═══════════════════════════════════════
         let cfg = {};
         let originalCfgStr = ""; 
-        const tabs = ['dashboard', 'basic', 'cyclic', 'alert', 'schedule', 'json'];
-        const tabNames = ['仪表盘', '基础配置', '循环上报', '主动报警', '日程任务', 'JSON 编辑'];
+        const allTabs = ['dashboard', 'basic', 'cyclic', 'alert', 'schedule', 'json'];
+        const allTabNames = ['仪表盘', '基础配置', '循环上报', '主动报警', '日程任务', 'JSON 编辑'];
+        const tabIcons = ['🏠', '🛠️', '📊', '🚨', '📅', '📝'];
+        let tabs = [];       // 当前用户可见的 tab
+        let tabNames = [];   // 对应的名称
         let currentTabIndex = 0;
         let pendingTargetIndex = -1; 
         let dashboardInitialized = false;
@@ -946,6 +963,7 @@ HTML_TEMPLATE = """
         // --- Standard UI ---
         function initDots() {
             const container = byId('page-dots');
+            container.innerHTML = '';
             tabs.forEach((_, i) => {
                 const dot = document.createElement('div');
                 dot.className = 'dot' + (i===0 ? ' active' : '');

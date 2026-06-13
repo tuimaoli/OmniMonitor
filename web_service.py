@@ -250,7 +250,7 @@ class WebService:
                             'system': sys_status,
                             'countdowns': countdowns,
                         }
-                        self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
+                        self._json(200, resp)
 
                     else:
                         self.send_error(404)
